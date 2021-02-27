@@ -642,7 +642,6 @@ class SpaceInvaders(object):
                     self.livesText.draw(self.screen)
                     self.check_input()
                     self.enemies.update(currentTime)
-                    # GAZE: update left right here
                     self.allSprites.update(self.keys_fake, currentTime)
                     self.explosionsGroup.update(currentTime)
                     self.check_collisions()

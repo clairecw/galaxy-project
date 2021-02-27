@@ -32,7 +32,7 @@ amy = PersonWithEyes(screen)
 
 clock = time.Clock()
 
-
+init()
 while True:
     for direction in DIRECTIONS:
         clock.tick(50)
