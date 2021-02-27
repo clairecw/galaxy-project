@@ -1,7 +1,7 @@
-#!/usr/bin/env python
-
-# Space Invaders
-# Created by Lee Robinson
+"""
+Play Space Invaders with your eyes 👀
+Originally created by Lee Robinson
+"""
 
 from pygame import *
 import sys
@@ -343,6 +343,8 @@ class SpaceInvaders(object):
         mixer.pre_init(44100, -16, 1, 4096)
         init()
         self.gaze = GazeTracking()
+        self.bullet_speed = 20
+        self.enemy_bullet_speed = 5
         self.webcam = cv2.VideoCapture(0)
         self.clock = time.Clock()
         self.caption = display.set_caption('Space Invaders')
@@ -441,7 +443,7 @@ class SpaceInvaders(object):
     def should_exit(evt):
         # type: (pygame.event.EventType) -> bool
         return evt.type == QUIT or (evt.type == KEYUP and evt.key == K_ESCAPE)
-
+    
     def check_input(self):
         self.keys = key.get_pressed()
         for e in event.get():
@@ -452,20 +454,20 @@ class SpaceInvaders(object):
         self.keys_fake[K_RIGHT] = self.gaze.is_right()
         if self.gaze.is_blinking():
             if len(self.bullets) == 0 and self.shipAlive:
-                if self.score < 1000:
+                if self.score < 0:
                     bullet = Bullet(self.player.rect.x + 23,
                                     self.player.rect.y + 5, -1,
-                                    15, 'laser', 'center')
+                                    self.bullet_speed, 'laser', 'center')
                     self.bullets.add(bullet)
                     self.allSprites.add(self.bullets)
                     self.sounds['shoot'].play()
                 else:
                     leftbullet = Bullet(self.player.rect.x + 8,
                                         self.player.rect.y + 5, -1,
-                                        15, 'laser', 'left')
+                                        self.bullet_speed, 'laser', 'left')
                     rightbullet = Bullet(self.player.rect.x + 38,
                                             self.player.rect.y + 5, -1,
-                                            15, 'laser', 'right')
+                                            self.bullet_speed, 'laser', 'right')
                     self.bullets.add(leftbullet)
                     self.bullets.add(rightbullet)
                     self.allSprites.add(self.bullets)
@@ -486,7 +488,7 @@ class SpaceInvaders(object):
         if (time.get_ticks() - self.timer) > 700 and self.enemies:
             enemy = self.enemies.random_bottom()
             self.enemyBullets.add(
-                Bullet(enemy.rect.x + 14, enemy.rect.y + 20, 1, 3,
+                Bullet(enemy.rect.x + 14, enemy.rect.y + 20, 1, self.enemy_bullet_speed,
                        'enemylaser', 'center'))
             self.allSprites.add(self.enemyBullets)
             self.timer = time.get_ticks()
