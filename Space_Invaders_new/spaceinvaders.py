@@ -8,6 +8,7 @@ import sys
 from os.path import abspath, dirname
 from random import choice
 import cv2
+import argparse
 from gaze_tracking import GazeTracking
 
 BASE_PATH = abspath(dirname(__file__))
@@ -329,11 +330,12 @@ class Text(object):
 
 
 class SpaceInvaders(object):
-    def __init__(self):
+    def __init__(self, use_gaze=False):
         # It seems, in Linux buffersize=512 is not enough, use 4096 to prevent:
         #   ALSA lib pcm.c:7963:(snd_pcm_recover) underrun occurred
         mixer.pre_init(44100, -16, 1, 4096)
         init()
+        self.use_gaze = args.use_gaze
         self.gaze = GazeTracking()
         self.bullet_speed = 25
         self.enemy_bullet_speed = 3
@@ -436,34 +438,43 @@ class SpaceInvaders(object):
         # type: (pygame.event.EventType) -> bool
         return evt.type == QUIT or (evt.type == KEYUP and evt.key == K_ESCAPE)
     
+    def shoot(self):
+        if len(self.bullets) == 0 and self.shipAlive:
+            if self.score < 0:
+                bullet = Bullet(self.player.rect.x + 23,
+                                self.player.rect.y + 5, -1,
+                                self.bullet_speed, 'laser', 'center')
+                self.bullets.add(bullet)
+                self.allSprites.add(self.bullets)
+                self.sounds['shoot'].play()
+            else:
+                leftbullet = Bullet(self.player.rect.x + 8,
+                                    self.player.rect.y + 5, -1,
+                                    self.bullet_speed, 'laser', 'left')
+                rightbullet = Bullet(self.player.rect.x + 38,
+                                        self.player.rect.y + 5, -1,
+                                        self.bullet_speed, 'laser', 'right')
+                self.bullets.add(leftbullet)
+                self.bullets.add(rightbullet)
+                self.allSprites.add(self.bullets)
+                self.sounds['shoot2'].play()
     def check_input(self):
         self.keys = key.get_pressed()
         for e in event.get():
             if self.should_exit(e):
                 sys.exit()
-        self.keys_fake = {K_LEFT: False, K_RIGHT: False}
-        self.keys_fake[K_LEFT] = self.gaze.is_left()
-        self.keys_fake[K_RIGHT] = self.gaze.is_right()
-        if self.gaze.is_blinking():
-            if len(self.bullets) == 0 and self.shipAlive:
-                if self.score < 0:
-                    bullet = Bullet(self.player.rect.x + 23,
-                                    self.player.rect.y + 5, -1,
-                                    self.bullet_speed, 'laser', 'center')
-                    self.bullets.add(bullet)
-                    self.allSprites.add(self.bullets)
-                    self.sounds['shoot'].play()
-                else:
-                    leftbullet = Bullet(self.player.rect.x + 8,
-                                        self.player.rect.y + 5, -1,
-                                        self.bullet_speed, 'laser', 'left')
-                    rightbullet = Bullet(self.player.rect.x + 38,
-                                            self.player.rect.y + 5, -1,
-                                            self.bullet_speed, 'laser', 'right')
-                    self.bullets.add(leftbullet)
-                    self.bullets.add(rightbullet)
-                    self.allSprites.add(self.bullets)
-                    self.sounds['shoot2'].play()
+            if e.type == KEYDOWN:	            # if e.type == KEYDOWN:
+                if e.key == K_SPACE:
+                    self.shoot()
+        
+        if self.use_gaze:
+            self.keys_fake = {K_LEFT: False, K_RIGHT: False}
+            self.keys_fake[K_LEFT] = self.gaze.is_left()
+            self.keys_fake[K_RIGHT] = self.gaze.is_right()
+
+            if self.gaze.is_blinking():
+                self.shoot()
+            
 
     def make_enemies(self):
         enemies = EnemiesGroup(10, 5)
@@ -642,7 +653,15 @@ class SpaceInvaders(object):
                     self.livesText.draw(self.screen)
                     self.check_input()
                     self.enemies.update(currentTime)
+<<<<<<< HEAD
                     self.allSprites.update(self.keys_fake, currentTime)
+=======
+                    # GAZE: update left right here
+                    if self.use_gaze:
+                        self.allSprites.update(self.keys_fake, currentTime)
+                    else:
+                        self.allSprites.update(self.keys, currentTime)
+>>>>>>> 856c8b59dcb74e7b563304f7a669e2ae3a12359f
                     self.explosionsGroup.update(currentTime)
                     self.check_collisions()
                     self.create_new_ship(self.makeNewShip, currentTime)
@@ -659,5 +678,8 @@ class SpaceInvaders(object):
 
 
 if __name__ == '__main__':
-    game = SpaceInvaders()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--use_gaze", default=False, action="store_true")
+    args = parser.parse_args()
+    game = SpaceInvaders(args.use_gaze)
     game.main()
