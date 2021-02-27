@@ -46,6 +46,14 @@ class Ship(sprite.Sprite):
         self.rect = self.image.get_rect(topleft=(375, 540))
         self.speed = 5
 
+    # # old update
+    # def update(self, keys, *args):
+    #     if keys[K_LEFT] and self.rect.x > 10:
+    #         self.rect.x -= self.speed
+    #     if keys[K_RIGHT] and self.rect.x < 740:
+    #         self.rect.x += self.speed
+    #     game.screen.blit(self.image, self.rect)
+
     def update(self, keys, *args):
         if keys[K_LEFT] and self.rect.x > 10:
             self.rect.x -= self.speed
@@ -439,8 +447,9 @@ class SpaceInvaders(object):
         for e in event.get():
             if self.should_exit(e):
                 sys.exit()
-            # if e.type == KEYDOWN:
-            #     if e.key == K_SPACE:
+        self.keys_fake = {K_LEFT: False, K_RIGHT: False}
+        self.keys_fake[K_LEFT] = self.gaze.is_left()
+        self.keys_fake[K_RIGHT] = self.gaze.is_right()
         if self.gaze.is_blinking():
             if len(self.bullets) == 0 and self.shipAlive:
                 if self.score < 1000:
@@ -477,7 +486,7 @@ class SpaceInvaders(object):
         if (time.get_ticks() - self.timer) > 700 and self.enemies:
             enemy = self.enemies.random_bottom()
             self.enemyBullets.add(
-                Bullet(enemy.rect.x + 14, enemy.rect.y + 20, 1, 5,
+                Bullet(enemy.rect.x + 14, enemy.rect.y + 20, 1, 3,
                        'enemylaser', 'center'))
             self.allSprites.add(self.enemyBullets)
             self.timer = time.get_ticks()
@@ -637,11 +646,10 @@ class SpaceInvaders(object):
                     self.scoreText.draw(self.screen)
                     self.scoreText2.draw(self.screen)
                     self.livesText.draw(self.screen)
-                    # GAZE: update space here
                     self.check_input()
                     self.enemies.update(currentTime)
                     # GAZE: update left right here
-                    self.allSprites.update(self.keys, currentTime)
+                    self.allSprites.update(self.keys_fake, currentTime)
                     self.explosionsGroup.update(currentTime)
                     self.check_collisions()
                     self.create_new_ship(self.makeNewShip, currentTime)
