@@ -44,7 +44,7 @@ class Ship(sprite.Sprite):
         sprite.Sprite.__init__(self)
         self.image = IMAGES['ship']
         self.rect = self.image.get_rect(topleft=(375, 540))
-        self.speed = 5
+        self.speed = 10
 
     def update(self, keys, *args):
         if keys[K_LEFT] and self.rect.x > 10:
@@ -335,8 +335,8 @@ class SpaceInvaders(object):
         mixer.pre_init(44100, -16, 1, 4096)
         init()
         self.gaze = GazeTracking()
-        self.bullet_speed = 20
-        self.enemy_bullet_speed = 5
+        self.bullet_speed = 25
+        self.enemy_bullet_speed = 3
         self.webcam = cv2.VideoCapture(0)
         self.clock = time.Clock()
         self.caption = display.set_caption('Space Invaders')
@@ -656,7 +656,7 @@ class SpaceInvaders(object):
                 self.create_game_over(currentTime)
 
             display.update()
-            self.clock.tick(60)
+            self.clock.tick(30)
 
 
 if __name__ == '__main__':
