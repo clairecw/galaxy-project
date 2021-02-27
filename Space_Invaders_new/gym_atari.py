@@ -6,45 +6,41 @@ Check the README.md for complete documentation.
 import cv2
 import gym
 from gaze_tracking import GazeTracking
+from control_map import *
+from gym.envs.classic_control import rendering
+import numpy as np
 
 gaze = GazeTracking()
 webcam = cv2.VideoCapture(0)
 
-env = gym.make("SpaceInvaders-v0")
-import pdb; pdb.set_trace()
+env = gym.make("SpaceInvadersNoFrameskip-v4")
 state_dim = env.observation_space.shape[0]
-action_dim = env.action_space.shape[0] 
-max_action = float(env.action_space.high[0])
+env.reset()
+viewer = rendering.SimpleImageViewer()
 
+eyes_action = ""
 while True:
     # We get a new frame from the webcam
     _, frame = webcam.read()
-    action = env.action_space.sample()
     
-
     # We send this frame to GazeTracking to analyze it
     gaze.refresh(frame)
 
     frame = gaze.annotated_frame()
-    text = ""
 
     if gaze.is_blinking():
-        text = "Blinking"
+        eyes_action = "blink"
     elif gaze.is_right():
-        text = "Looking right"
+        eyes_action = "right"
     elif gaze.is_left():
-        text = "Looking left"
+        eyes_action = "left"
     elif gaze.is_center():
-        text = "Looking center"
+        eyes_action = "center"
+    
+    act = eyes_to_act[eyes_action]
+    print(act)
 
-    # cv2.putText(frame, text, (90, 60), cv2.FONT_HERSHEY_DUPLEX, 1.6, (147, 58, 31), 2)
-
-    # left_pupil = gaze.pupil_left_coords()
-    # right_pupil = gaze.pupil_right_coords()
-    # cv2.putText(frame, "Left pupil:  " + str(left_pupil), (90, 130), cv2.FONT_HERSHEY_DUPLEX, 0.9, (147, 58, 31), 1)
-    # cv2.putText(frame, "Right pupil: " + str(right_pupil), (90, 165), cv2.FONT_HERSHEY_DUPLEX, 0.9, (147, 58, 31), 1)
-
-    # cv2.imshow("Demo", frame)
-
-    # if cv2.waitKey(1) == 27:
-    #     break
+    obs, rew, done, info = env.step(act)
+    rgb = env.render('rgb_array')
+    upscaled = np.repeat(np.repeat(rgb, 4, axis=0), 4, axis=1)
+    viewer.imshow(upscaled)
