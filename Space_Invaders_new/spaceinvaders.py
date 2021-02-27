@@ -7,6 +7,8 @@ from pygame import *
 import sys
 from os.path import abspath, dirname
 from random import choice
+import cv2
+from gaze_tracking import GazeTracking
 
 BASE_PATH = abspath(dirname(__file__))
 FONT_PATH = BASE_PATH + '/fonts/'
@@ -332,6 +334,8 @@ class SpaceInvaders(object):
         #   ALSA lib pcm.c:7963:(snd_pcm_recover) underrun occurred
         mixer.pre_init(44100, -16, 1, 4096)
         init()
+        self.gaze = GazeTracking()
+        self.webcam = cv2.VideoCapture(0)
         self.clock = time.Clock()
         self.caption = display.set_caption('Space Invaders')
         self.screen = SCREEN
@@ -357,6 +361,16 @@ class SpaceInvaders(object):
         self.life2 = Life(742, 3)
         self.life3 = Life(769, 3)
         self.livesGroup = sprite.Group(self.life1, self.life2, self.life3)
+
+    def refresh_gaze_tracker(self):
+        # We get a new frame from the webcam
+        _, frame = self.webcam.read()
+
+        # We send this frame to GazeTracking to analyze it
+        self.gaze.refresh(frame)
+
+        # frame = self.gaze.annotated_frame()
+        # return frame
 
     def reset(self, score):
         self.player = Ship()
@@ -425,27 +439,28 @@ class SpaceInvaders(object):
         for e in event.get():
             if self.should_exit(e):
                 sys.exit()
-            if e.type == KEYDOWN:
-                if e.key == K_SPACE:
-                    if len(self.bullets) == 0 and self.shipAlive:
-                        if self.score < 1000:
-                            bullet = Bullet(self.player.rect.x + 23,
+            # if e.type == KEYDOWN:
+            #     if e.key == K_SPACE:
+        if self.gaze.is_blinking():
+            if len(self.bullets) == 0 and self.shipAlive:
+                if self.score < 1000:
+                    bullet = Bullet(self.player.rect.x + 23,
+                                    self.player.rect.y + 5, -1,
+                                    15, 'laser', 'center')
+                    self.bullets.add(bullet)
+                    self.allSprites.add(self.bullets)
+                    self.sounds['shoot'].play()
+                else:
+                    leftbullet = Bullet(self.player.rect.x + 8,
+                                        self.player.rect.y + 5, -1,
+                                        15, 'laser', 'left')
+                    rightbullet = Bullet(self.player.rect.x + 38,
                                             self.player.rect.y + 5, -1,
-                                            15, 'laser', 'center')
-                            self.bullets.add(bullet)
-                            self.allSprites.add(self.bullets)
-                            self.sounds['shoot'].play()
-                        else:
-                            leftbullet = Bullet(self.player.rect.x + 8,
-                                                self.player.rect.y + 5, -1,
-                                                15, 'laser', 'left')
-                            rightbullet = Bullet(self.player.rect.x + 38,
-                                                 self.player.rect.y + 5, -1,
-                                                 15, 'laser', 'right')
-                            self.bullets.add(leftbullet)
-                            self.bullets.add(rightbullet)
-                            self.allSprites.add(self.bullets)
-                            self.sounds['shoot2'].play()
+                                            15, 'laser', 'right')
+                    self.bullets.add(leftbullet)
+                    self.bullets.add(rightbullet)
+                    self.allSprites.add(self.bullets)
+                    self.sounds['shoot2'].play()
 
     def make_enemies(self):
         enemies = EnemiesGroup(10, 5)
@@ -570,6 +585,7 @@ class SpaceInvaders(object):
 
     def main(self):
         while True:
+            self.refresh_gaze_tracker()
             if self.mainScreen:
                 self.screen.blit(self.background, (0, 0))
                 self.titleText.draw(self.screen)
@@ -621,8 +637,10 @@ class SpaceInvaders(object):
                     self.scoreText.draw(self.screen)
                     self.scoreText2.draw(self.screen)
                     self.livesText.draw(self.screen)
+                    # GAZE: update space here
                     self.check_input()
                     self.enemies.update(currentTime)
+                    # GAZE: update left right here
                     self.allSprites.update(self.keys, currentTime)
                     self.explosionsGroup.update(currentTime)
                     self.check_collisions()
