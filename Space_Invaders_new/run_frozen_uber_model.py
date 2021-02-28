@@ -125,7 +125,7 @@ from gym.envs.classic_control import rendering
 def repeat_upsample(rgb_array, k=1, l=1, err=[]):
     return np.repeat(np.repeat(rgb_array, k, axis=0), l, axis=1)
 
-def bar_loop_shit(q):
+def bar_loop_shit(q, q_actions):
     pygame.init()
     screen = pygame.display.set_mode((1300,800))
     clock = pygame.time.Clock()
@@ -195,8 +195,9 @@ def bar_loop_shit(q):
             prob = bar_obj.prob
 
         q.put((randomize, prob))
+        act = q_actions.get()
 
-def play_atari(q):
+def play_atari(q, q_actions):
     with tf.Graph().as_default() as graph, tf.Session(config=config) as sess:
         if preprocessing == 'dopamine': #dopamine-style preprocessing
             env = gym.make(m.environment)
@@ -258,6 +259,7 @@ def play_atari(q):
             randomize, prob = q.get()
             if randomize and random.uniform(0, 1) < prob:
                 act = np.array([env.action_space.sample()])
+            q_actions.put(act)
                 # print(act)
             actions.append(act[0])
 
@@ -296,8 +298,9 @@ def play_atari(q):
         results = {'observations':sample_observations,'frames':sample_frames,'ram':sample_ram,'representation':sample_representation,'score':sample_score,'ep_rewards':rewards,'actions':actions}
 
 q = Queue() 
-t1 = Thread(target = play_atari, args =(q, )) 
-t1.start() 
+q_actions = Queue()
+t1 = Thread(target = play_atari, args =(q, q_actions, )) 
+t1.start()
 
-bar_loop_shit(q)
+bar_loop_shit(q, q_actions)
 
