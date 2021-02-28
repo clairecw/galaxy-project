@@ -108,7 +108,7 @@ with tf.Graph().as_default() as graph, tf.Session(config=config) as sess:
     viewer = rendering.SimpleImageViewer()
     
     # Evaluate policy over test_eps episodes
-    max_steps = 100
+    max_steps = 250
     while ep_count < 1 or frame_count<= max_steps:
         if render:
             sleep(0.05)
