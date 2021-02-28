@@ -60,7 +60,6 @@ class Person:
     def gen_name(self, action, is_mad):
         mad_string = "_mad" if is_mad else ""
         name =  "jc_" + action + mad_string + ".png"
-        # print(name)
         return name
     def update(self, action, is_match):
         self.person = image.load(self.IMAGE_PATH + self.gen_name(action, not is_match)).convert()
@@ -87,10 +86,11 @@ class TextBox:
 
 class InputBox:
     def __init__(self, x, y, w, h, text=''):
+        self.fsize = 22
         self.rect = pygame.Rect(x, y, w, h)
         self.color = pygame.Color('lightskyblue3')
         self.text = text
-        self.txt_surface = pygame.font.SysFont("verdana", 26).render(text, True, self.color)
+        self.txt_surface = pygame.font.SysFont("verdana", self.fsize).render(text, True, self.color)
         self.active = True
 
     def handle_event(self, event):
@@ -105,7 +105,6 @@ class InputBox:
         if event.type == pygame.KEYDOWN:
             if self.active:
                 if event.key == pygame.K_RETURN:
-                    # print(self.text)
                     ans = self.text
                     self.text = ''
                 elif event.key == pygame.K_BACKSPACE:
@@ -113,7 +112,7 @@ class InputBox:
                 else:
                     self.text += event.unicode
                 # Re-render the text.
-                self.txt_surface = pygame.font.SysFont("verdana", 32).render(self.text, True, self.color)
+                self.txt_surface = pygame.font.SysFont("verdana", self.fsize).render(self.text, True, self.color)
         return ans
 
     def update(self):
@@ -153,7 +152,7 @@ def repeat_upsample(rgb_array, k=1, l=1, err=[]):
 
 def bar_loop_shit(q, q_actions):
     pygame.init()
-    screen = pygame.display.set_mode((1300,800))
+    screen = pygame.display.set_mode((1200,800))
     clock = pygame.time.Clock()
     bar_obj = Bar(screen, 0, 0)
     bar = pygame.sprite.GroupSingle(bar_obj)
@@ -163,10 +162,9 @@ def bar_loop_shit(q, q_actions):
     randomize = False
     prob = 0
 
-
     feud = ff.FamFeud()
     idx, qn = feud.draw_next_q()
-    leftcoord = 700
+    leftcoord = 850
     jc = Person(300, 300)
     lastscoreText = TextBox(leftcoord, 5, 140, 32, text="Previous question answers:")
     prevansboxes = [
@@ -218,7 +216,7 @@ def bar_loop_shit(q, q_actions):
         act, true_act = q_actions.get()
         jc.draw(screen)
         jc.update(act_to_eyes[act[0]], act==true_act)
-        print(act == true_act)
+        # print(act == true_act)
         
 
         pygame.display.flip()
@@ -275,7 +273,7 @@ def play_atari(q, q_actions):
             
             if render:
                 rgb = env.render('rgb_array')
-                upscaled = repeat_upsample(rgb,4, 4)
+                upscaled = repeat_upsample(rgb, 3, 3)
                 viewer.imshow(upscaled)
                 
             train_dict = {X_t:obs[None]}

@@ -11,6 +11,8 @@ class FamFeud():
         self.question_bank = []
         with jsonlines.open('train.json') as reader:
             for obj in reader:
+                if len(obj['question']['original']) > 70:
+                    continue
                 dontadd = False
                 for ans in obj['answers']['raw']:
                     if len(ans.split(' ')) > 1:
