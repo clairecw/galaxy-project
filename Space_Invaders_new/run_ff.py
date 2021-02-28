@@ -19,6 +19,10 @@ class TextBox:
         self.txt_surface = pg.font.Font(None, 20).render(text, True, self.color)
         self.active = False
 
+    def update(self, text):
+        self.text = text
+        self.txt_surface = pg.font.Font(None, 20).render(text, True, self.color)
+
     def draw(self, screen):
         screen.blit(self.txt_surface, (self.rect.x+5, self.rect.y+5))
 
@@ -68,9 +72,9 @@ class InputBox:
 
 def main():
     pg.init()
-    screen = pg.display.set_mode((640, 480))
+    screen = pg.display.set_mode((800, 480))
     clock = pg.time.Clock()
-    input_box1 = InputBox(10, 300, 140, 32)
+    input_box1 = InputBox(10, 200, 140, 32)
     input_boxes = [input_box1]
     bar_obj = Bar(screen, 5, 5)
     bar = pygame.sprite.GroupSingle(bar_obj)
@@ -78,7 +82,10 @@ def main():
     done = False
     feud = ff.FamFeud()
     idx, qn = feud.draw_next_q()
-    lastscoreText = TextBox(500, 5, 140, 32, text="")
+    lastscoreText = TextBox(550, 5, 140, 32, text="Previous question answers:")
+    prevansboxes = [
+        TextBox(500, 40 + 20 * i, 140, 20, text="") for i in range(8)
+    ]
 
     while not done:
         titleText = TextBox(20, 100, 140, 32, text=qn)
@@ -92,7 +99,13 @@ def main():
                 ans = box.handle_event(event)
                 if ans:
                     score, sols = feud.score_ans(idx, ans)
-                    lastscoreText = TextBox(400, 5, 140, 32, text=str(score))
+                    for i, sol in enumerate(sols):
+                        prevansboxes[i].update(sol)
+                    while i < len(prevansboxes):
+                        prevansboxes[i].update("")
+                        i += 1
+
+                    # lastscoreText = TextBox(400, 5, 140, 32, text=str(score))
                     if score > 0:
                         bar.sprite.up(score)
                     else:
@@ -105,7 +118,7 @@ def main():
             box.update()
 
         screen.fill((30, 30, 30))
-        for box in input_boxes:
+        for box in input_boxes + prevansboxes:
             box.draw(screen)
         titleText.draw(screen)
         lastscoreText.draw(screen)
