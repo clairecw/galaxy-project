@@ -17,7 +17,7 @@ class Bar(pygame.sprite.Sprite):
         self.max_health = 1000
         self.health_bar_length = 400
         self.health_ratio = self.max_health / self.health_bar_length
-        self.health_change_speed = 20
+        self.health_change_speed = 30
         self.screen = screen
         self.randomize = False
         self.prob = 0
@@ -37,7 +37,7 @@ class Bar(pygame.sprite.Sprite):
             self.target_health = self.max_health
 
     def update(self):
-        self.target_health = max(self.target_health - 0.05, 0)
+        self.target_health = max(self.target_health - 0.5, 0)
         uwu = self.advanced_health()
 
     def advanced_health(self):

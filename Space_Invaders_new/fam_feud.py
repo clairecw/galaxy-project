@@ -1,8 +1,10 @@
 import jsonlines
 import string
 import numpy as np
+import Levenshtein
 
-BAD_ANSWER_PENALTY = -10
+BAD_ANSWER_PENALTY = 0
+GOOD_ANSWER_PENALTY = 80
 
 class FamFeud():
     def __init__(self):
@@ -33,14 +35,25 @@ class FamFeud():
         ans_split = ans.split(' ')
         if debug:
             print(sols)
-        # TODO: generally make this more robust
-
         for sol in sols:
             sol_spaced = sol.translate(str.maketrans(string.punctuation, ' '*len(string.punctuation)))
             sol_split = sol_spaced.split(' ')
             for ans_part in ans_split:
-                if ans_part in sol_split:
-                    return sols[sol], sols
+                for sol_part in sol_split:
+                    if self.match(ans_part, sol_part):
+                        return GOOD_ANSWER_PENALTY, sols
         return BAD_ANSWER_PENALTY, sols
+
+    def match(self, input_string, string):
+        if input_string + "s" == string \
+            or input_string == string + "s" \
+            or input_string + "es" == string \
+            or input_string == string + "es" \
+            or input_string == string + "ing" \
+            or input_string + "ing" == string \
+            or Levenshtein.distance(input_string, string) < 3 \
+            or input_string == string:
+            return True
+        return False
 
 ff = FamFeud()

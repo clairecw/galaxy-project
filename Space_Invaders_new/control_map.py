@@ -2,7 +2,7 @@ act_to_eyes = {
     0: 'center',
     1: 'left',
     2: 'right',
-    3: 'blink',
+    3: 'shoot',
     4: 'left',
     5: 'right'
 }
