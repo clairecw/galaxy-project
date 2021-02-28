@@ -69,7 +69,7 @@ def bar_loop_shit(q):
     pygame.init()
     screen = pygame.display.set_mode((800,800))
     clock = pygame.time.Clock()
-    bar_obj = Bar(screen)
+    bar_obj = Bar(screen, 0, 0)
     bar = pygame.sprite.GroupSingle(bar_obj)
     randomize = False
     prob = 0
@@ -94,11 +94,6 @@ def bar_loop_shit(q):
         if bar_obj.randomize and random.uniform(0, 1) < bar_obj.prob:
             randomize = bar_obj.randomize
             prob = bar_obj.prob
-            # act = np.array([env.action_space.sample()])
-            # print(act)
-        else:
-            randomize = False
-            prob = 0.
 
         q.put((randomize, prob))
 
@@ -161,11 +156,10 @@ def play_atari(q):
 
             #grab action
             act = results[0]
-
-            # if bar_obj.randomize and random.uniform(0, 1) < bar_obj.prob:
-            #     act = np.array([env.action_space.sample()])
-            #     print(act)
-            print(q.get())
+            randomize, prob = q.get()
+            if randomize and random.uniform(0, 1) < prob:
+                act = np.array([env.action_space.sample()])
+                # print(act)
             actions.append(act[0])
 
             #get high-level representation
@@ -203,8 +197,8 @@ def play_atari(q):
         results = {'observations':sample_observations,'frames':sample_frames,'ram':sample_ram,'representation':sample_representation,'score':sample_score,'ep_rewards':rewards,'actions':actions}
 
 q = Queue() 
-# t1 = Thread(target = play_atari, args =(q, )) 
-# t1.start() 
+t1 = Thread(target = play_atari, args =(q, )) 
+t1.start() 
 
 bar_loop_shit(q)
 
