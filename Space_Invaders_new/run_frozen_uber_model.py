@@ -123,6 +123,9 @@ with tf.Graph().as_default() as graph, tf.Session(config=config) as sess:
         act = results[0]
         actions.append(act[0])
 
+        # translate to amy
+        eye_movement = act_to_eyes[act]
+
         #get high-level representation
         representation = results[1][0]
 
@@ -159,6 +162,3 @@ with tf.Graph().as_default() as graph, tf.Session(config=config) as sess:
         print("frames:",frame_count)
 
     results = {'observations':sample_observations,'frames':sample_frames,'ram':sample_ram,'representation':sample_representation,'score':sample_score,'ep_rewards':rewards,'actions':actions}
-
-# translate to eye movements
-eye_movements = [act_to_eyes[a] for a in results['actions']]
