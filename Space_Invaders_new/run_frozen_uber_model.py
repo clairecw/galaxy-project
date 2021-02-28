@@ -8,6 +8,7 @@ from bar import *
 import random
 from queue import Queue 
 from threading import Thread 
+import fam_feud as ff
 
 """## Download trained model and precomputed rollout data"""
 
@@ -41,6 +42,65 @@ import random
 from atari_zoo.dopamine_preprocessing import AtariPreprocessing as DopamineAtariPreprocessing	
 from atari_zoo.atari_wrappers import FireResetEnv, NoopResetEnv, MaxAndSkipEnv,WarpFrameTF,FrameStack,ScaledFloatFrame 
 
+
+
+class TextBox:
+    def __init__(self, x, y, w, h, text=''):
+        self.rect = pygame.Rect(x, y, w, h)
+        self.color = pygame.Color('lightskyblue3')
+        self.text = text
+        self.txt_surface = pygame.font.SysFont("verdana", 20).render(text, True, self.color)
+        self.active = False
+
+    def update(self, text):
+        self.text = text
+        self.txt_surface = pygame.font.SysFont("verdana", 20).render(text, True, self.color)
+
+    def draw(self, screen):
+        screen.blit(self.txt_surface, (self.rect.x+5, self.rect.y+5))
+
+class InputBox:
+    def __init__(self, x, y, w, h, text=''):
+        self.rect = pygame.Rect(x, y, w, h)
+        self.color = pygame.Color('lightskyblue3')
+        self.text = text
+        self.txt_surface = pygame.font.SysFont("verdana", 26).render(text, True, self.color)
+        self.active = True
+
+    def handle_event(self, event):
+        ans = ''
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            # If the user clicked on the input_box rect.
+            if self.rect.collidepoint(event.pos):
+                # Toggle the active variable.
+                self.active = True
+            # Change the current color of the input box.
+            self.color = pygame.Color('dodgerblue2') if self.active else pygame.Color('lightskyblue3')
+        if event.type == pygame.KEYDOWN:
+            if self.active:
+                if event.key == pygame.K_RETURN:
+                    # print(self.text)
+                    ans = self.text
+                    self.text = ''
+                elif event.key == pygame.K_BACKSPACE:
+                    self.text = self.text[:-1]
+                else:
+                    self.text += event.unicode
+                # Re-render the text.
+                self.txt_surface = pygame.font.SysFont("verdana", 32).render(self.text, True, self.color)
+        return ans
+
+    def update(self):
+        # Resize the box if the text is too long.
+        width = max(200, self.txt_surface.get_width()+10)
+        self.rect.w = width
+
+    def draw(self, screen):
+        # Blit the text.
+        screen.blit(self.txt_surface, (self.rect.x+5, self.rect.y+5))
+        # Blit the rect.
+        pygame.draw.rect(screen, self.color, self.rect, 2)
+
 algo = "a2c" #or try.... es, ga, dqn, a2c, apex
 env = "SpaceInvadersNoFrameskip-v4"  #or try... ZaxxonNoFrameSkip-v4
 run_id = 2
@@ -67,29 +127,68 @@ def repeat_upsample(rgb_array, k=1, l=1, err=[]):
 
 def bar_loop_shit(q):
     pygame.init()
-    screen = pygame.display.set_mode((800,800))
+    screen = pygame.display.set_mode((1300,800))
     clock = pygame.time.Clock()
     bar_obj = Bar(screen, 0, 0)
     bar = pygame.sprite.GroupSingle(bar_obj)
+
+    input_box1 = InputBox(10, 150, 140, 32)
+    input_boxes = [input_box1]
     randomize = False
     prob = 0
 
+
+    feud = ff.FamFeud()
+    idx, qn = feud.draw_next_q()
+    leftcoord = 700
+    lastscoreText = TextBox(leftcoord, 5, 140, 32, text="Previous question answers:")
+    prevansboxes = [
+        TextBox(leftcoord, 40 + 20 * i, 140, 20, text="") for i in range(10)
+    ]
+
     while True:
+        titleText = TextBox(20, 100, 140, 32, text=qn)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit()
                 pygame.quit()
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP:
-                    bar.sprite.up(100)
-                if event.key == pygame.K_DOWN:
-                    bar.sprite.down(5)
+            for box in input_boxes:
+                ans = box.handle_event(event)
+                if ans:
+                    score, sols = feud.score_ans(idx, ans)
+                    for i, sol in enumerate(sols):
+                        prevansboxes[i].update(sol)
+                    while i < len(prevansboxes):
+                        prevansboxes[i].update("")
+                        i += 1
 
-        screen.fill((30,30,30))
+                    if score > 0:
+                        bar.sprite.up(score)
+                    else:
+                        bar.sprite.down(5)
+
+                    idx, qn = feud.draw_next_q()
+                    titleText = TextBox(20, 100, 140, 32, text=qn)
+
+        for box in input_boxes:
+            box.update()
+
+        screen.fill((30, 30, 30))
+        for box in input_boxes + prevansboxes:
+            box.draw(screen)
+        titleText.draw(screen)
+        lastscoreText.draw(screen)
         bar.draw(screen)
         bar.update()
-        pygame.display.update()
+
+        pygame.display.flip()
         clock.tick(10)
+
+        # screen.fill((30,30,30))
+        # bar.draw(screen)
+        # bar.update()
+        # pygame.display.update()
+        # clock.tick(10)
 
         if bar_obj.randomize and random.uniform(0, 1) < bar_obj.prob:
             randomize = bar_obj.randomize
