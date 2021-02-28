@@ -4,6 +4,8 @@ import atari_zoo
 import tensorflow as tf
 import gym
 from control_map import *
+from bar import *
+import random
 
 """## Download trained model and precomputed rollout data"""
 
@@ -106,12 +108,32 @@ with tf.Graph().as_default() as graph, tf.Session(config=config) as sess:
     verbose = True
 
     viewer = rendering.SimpleImageViewer()
+
+    pygame.init()
+    screen = pygame.display.set_mode((800,800))
+    clock = pygame.time.Clock()
+    bar_obj = Bar(screen)
+    bar = pygame.sprite.GroupSingle(bar_obj)
     
     # Evaluate policy over test_eps episodes
-    max_steps = 250
-    while ep_count < 1 or frame_count<= max_steps:
+    while ep_count < 1:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                sys.exit()
+                pygame.quit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:
+                    bar.sprite.up(100)
+                if event.key == pygame.K_DOWN:
+                    bar.sprite.down(5)
+
+        screen.fill((30,30,30))
+        bar.draw(screen)
+        bar.update()
+        pygame.display.update()
+        clock.tick(10)
+
         if render:
-            sleep(0.05)
             rgb = env.render('rgb_array')
             upscaled = repeat_upsample(rgb,4, 4)
             viewer.imshow(upscaled)
@@ -121,10 +143,14 @@ with tf.Graph().as_default() as graph, tf.Session(config=config) as sess:
 
         #grab action
         act = results[0]
+
+        if bar_obj.randomize and random.uniform(0, 1) < bar_obj.prob:
+            act = np.array([env.action_space.sample()])
+            print(act)
         actions.append(act[0])
 
         # translate to amy
-        eye_movement = act_to_eyes[act]
+        # eye_movement = act_to_eyes[act]
 
         #get high-level representation
         representation = results[1][0]
@@ -146,9 +172,6 @@ with tf.Graph().as_default() as graph, tf.Session(config=config) as sess:
 
         ep_rew += rew
         frame_count+=1
-
-        if frame_count >= max_steps:
-            done=True
 
         if done:
             obs = env.reset()
