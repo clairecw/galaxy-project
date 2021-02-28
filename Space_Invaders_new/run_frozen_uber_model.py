@@ -10,6 +10,8 @@ from queue import Queue
 from threading import Thread 
 import fam_feud as ff
 
+from pygame import *
+
 """## Download trained model and precomputed rollout data"""
 
 import atari_zoo
@@ -42,7 +44,31 @@ import random
 from atari_zoo.dopamine_preprocessing import AtariPreprocessing as DopamineAtariPreprocessing	
 from atari_zoo.atari_wrappers import FireResetEnv, NoopResetEnv, MaxAndSkipEnv,WarpFrameTF,FrameStack,ScaledFloatFrame 
 
+class Person:
+    def __init__(self, x, y):
+        self.BASE_PATH = os.path.abspath(os.path.dirname(__file__))
+        self.IMAGE_PATH = self.BASE_PATH + '/images/'
+        self.person = image.load(self.IMAGE_PATH + self.gen_name("center", False)).convert()
+        self.x = x
+        self.y = y
 
+        self.target_width = 300
+        self.target_height = int(self.target_width / (self.person.get_width() / self.person.get_height()))
+        # import pdb; pdb.set_trace()
+        self.person = pygame.transform.scale(self.person, (self.target_width, self.target_height))
+        
+    def gen_name(self, action, is_mad):
+        mad_string = "_mad" if is_mad else ""
+        name =  "jc_" + action + mad_string + ".png"
+        # print(name)
+        return name
+    def update(self, action, is_match):
+        self.person = image.load(self.IMAGE_PATH + self.gen_name(action, not is_match)).convert()
+        self.person = pygame.transform.scale(self.person, (self.target_width, self.target_height))
+
+    def draw(self, screen):
+        self.person = pygame.transform.scale(self.person, (self.target_width, self.target_height))
+        screen.blit(self.person, (self.x, self.y))
 
 class TextBox:
     def __init__(self, x, y, w, h, text=''):
@@ -141,6 +167,7 @@ def bar_loop_shit(q, q_actions):
     feud = ff.FamFeud()
     idx, qn = feud.draw_next_q()
     leftcoord = 700
+    jc = Person(300, 300)
     lastscoreText = TextBox(leftcoord, 5, 140, 32, text="Previous question answers:")
     prevansboxes = [
         TextBox(leftcoord, 40 + 20 * i, 140, 20, text="") for i in range(10)
@@ -181,21 +208,21 @@ def bar_loop_shit(q, q_actions):
         bar.draw(screen)
         bar.update()
 
-        pygame.display.flip()
-        clock.tick(10)
-
-        # screen.fill((30,30,30))
-        # bar.draw(screen)
-        # bar.update()
-        # pygame.display.update()
-        # clock.tick(10)
+        
 
         if bar_obj.randomize and random.uniform(0, 1) < bar_obj.prob:
             randomize = bar_obj.randomize
             prob = bar_obj.prob
 
         q.put((randomize, prob))
-        act = q_actions.get()
+        act, true_act = q_actions.get()
+        jc.draw(screen)
+        jc.update(act_to_eyes[act[0]], act==true_act)
+        print(act == true_act)
+        
+
+        pygame.display.flip()
+        clock.tick(10)
 
 def play_atari(q, q_actions):
     with tf.Graph().as_default() as graph, tf.Session(config=config) as sess:
@@ -244,7 +271,7 @@ def play_atari(q, q_actions):
         viewer = rendering.SimpleImageViewer()
         
         # Evaluate policy over test_eps episodes
-        while ep_count < 1:
+        while ep_count < 10:
             
             if render:
                 rgb = env.render('rgb_array')
@@ -256,10 +283,12 @@ def play_atari(q, q_actions):
 
             #grab action
             act = results[0]
+            true_act = act
             randomize, prob = q.get()
-            if randomize and random.uniform(0, 1) < prob:
-                act = np.array([env.action_space.sample()])
-            q_actions.put(act)
+            if randomize and (2 * random.uniform(0, 1)) < prob:
+                true_act = np.array([env.action_space.sample()])
+            q_actions.put((act, true_act))
+            act = true_act
                 # print(act)
             actions.append(act[0])
 
