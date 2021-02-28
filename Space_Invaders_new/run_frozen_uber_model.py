@@ -195,7 +195,8 @@ def bar_loop_shit(q, q_actions):
             prob = bar_obj.prob
 
         q.put((randomize, prob))
-        act = q_actions.get()
+        act, true_act = q_actions.get()
+        print(act == true_act)
 
 def play_atari(q, q_actions):
     with tf.Graph().as_default() as graph, tf.Session(config=config) as sess:
@@ -256,10 +257,13 @@ def play_atari(q, q_actions):
 
             #grab action
             act = results[0]
+            true_act = act
             randomize, prob = q.get()
-            if randomize and random.uniform(0, 1) < prob:
-                act = np.array([env.action_space.sample()])
-            q_actions.put(act)
+            if randomize:
+            # and random.uniform(0, 1) < prob:
+                true_act = np.array([env.action_space.sample()])
+            q_actions.put((act, true_act))
+            act = true_act
                 # print(act)
             actions.append(act[0])
 
